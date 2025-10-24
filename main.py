@@ -9,9 +9,9 @@ import telebot
 from telebot import types
 
 # ---------- CONFIG ----------
-TELEGRAM_TOKEN = "7430907431:AAHw7EpHx2t-o5uZf2jKqnb_D82qqq9CH1Q"
-FUSION_API_KEY = "C6C5DB8F5C671F7349C0E90088D0405A"
-FUSION_SECRET = "49B4187DBC2B3D561E93D01B4185746F"
+TELEGRAM_TOKEN = "ВАШ_TELEGRAM_TOKEN"
+FUSION_API_KEY = "ВАШ_FUSION_API_KEY"
+FUSION_SECRET = "ВАШ_FUSION_SECRET"
 FUSION_BASE_URL = "https://api-key.fusionbrain.ai"
 DEFAULT_MODEL_NAME = "Kandinsky"
 # ----------------------------

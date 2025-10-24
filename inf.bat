@@ -3,10 +3,6 @@ color 0A
 :START
 cls
 echo ================================
-echo       SYSTEM INFORMATION
-echo ================================
-systeminfo | findstr /B /C:"OS Name" /C:"OS Version" /C:"System Type"
-echo.
 echo Running your Python script...
 echo ================================
 python main.py

@@ -2,9 +2,9 @@
 color 0A
 :START
 cls
-echo ================================
-echo Running your Python script...
-echo ================================
+echo =================================================
+echo           Running your Python script...            
+echo =================================================
 python main.py
 echo.
 echo Script finished. Restarting in 5 seconds...

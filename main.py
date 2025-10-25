@@ -47,6 +47,11 @@ def main_keyboard(lang="ru"):
         kb.row("ℹ️ About")
     return kb
 
+def lang_keyboard():
+    kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    kb.row("Русский 🇷🇺", "English 🇬🇧")
+    return kb
+
 # ---------- API helpers ----------
 def get_pipeline_id():
     url = f"{FUSION_BASE_URL}/key/api/v1/pipelines"
@@ -104,10 +109,38 @@ def retrieve_image_bytes(file_repr):
 @bot.message_handler(commands=["start"])
 def cmd_start(m):
     chat_id = m.chat.id
-    _user_lang.setdefault(chat_id, "ru")
-    lang = _user_lang[chat_id]
-    bot.send_message(chat_id, "👋 Привет! Отправьте текстовый промпт для генерации изображения." if lang=="ru"
-                     else "👋 Hi! Send a text prompt to generate an image.", reply_markup=main_keyboard(lang))
+    # показываем клавиатуру выбора языка и регистрируем следующий шаг
+    msg = bot.send_message(chat_id, "Choose language / Выберите язык:", reply_markup=lang_keyboard())
+    bot.register_next_step_handler(msg, process_lang_choice)
+
+def process_lang_choice(m):
+    chat_id = m.chat.id
+    text = (m.text or "").strip().lower()
+
+    # если пользователь прислал команду /start снова или пусто - повторяем выбор
+    if not text or text.startswith("/start"):
+        msg = bot.send_message(chat_id, "Choose language / Выберите язык:", reply_markup=lang_keyboard())
+        bot.register_next_step_handler(msg, process_lang_choice)
+        return
+
+    # определяем язык по тексту (учитываем emoji и разные регистры)
+    if "рус" in text or "🇷🇺" in m.text:
+        _user_lang[chat_id] = "ru"
+        lang = "ru"
+        bot.send_message(chat_id, "🌐 Язык сменен на Русский.", reply_markup=main_keyboard(lang))
+        bot.send_message(chat_id, "👋 Привет! Отправьте текстовый промпт для генерации изображения, или выберите действие на клавиатуре..", reply_markup=main_keyboard(lang))
+        return
+
+    if "english" in text or "англ" in text or "🇬🇧" in m.text:
+        _user_lang[chat_id] = "en"
+        lang = "en"
+        bot.send_message(chat_id, "🌐 Language changed to English.", reply_markup=main_keyboard(lang))
+        bot.send_message(chat_id, "👋 Hi! Send a text prompt to generate an image, or choose an action from the keyboard..", reply_markup=main_keyboard(lang))
+        return
+
+    # если ввели что-то неопределённое - повторяем выбор
+    msg = bot.send_message(chat_id, "Не распознан выбор. Please choose / Пожалуйста, выберите язык:", reply_markup=lang_keyboard())
+    bot.register_next_step_handler(msg, process_lang_choice)
 
 @bot.message_handler(commands=["help"])
 def cmd_help(m):
@@ -117,13 +150,11 @@ def cmd_help(m):
                "/start — старт\n"
                "/help — помощь\n"
                "/lang — смена языка\n"
-               "/status — проверить модель\n\n"
                "Отправьте текст — получите изображение.")
     help_en = ("🔧 Commands:\n"
                "/start — start\n"
                "/help — help\n"
                "/lang — change language\n"
-               "/status — check model\n\n"
                "Send text — get image.")
     bot.send_message(chat_id, help_ru if lang=="ru" else help_en, reply_markup=main_keyboard(lang))
 
@@ -173,6 +204,16 @@ def handle_prompt(m):
                              if lang=="ru" else
                              ("❌ Error checking model: " + str(e)),
                              reply_markup=main_keyboard(lang))
+        return
+    elif m.text == ("english 🇬🇧"):
+        _user_lang[chat_id] = "en"
+        lang = _user_lang[chat_id]
+        bot.send_message(chat_id, "🌐 Language changed to English.", reply_markup=main_keyboard(lang))
+        return
+    elif m.text == ("русский 🇷🇺"):
+        _user_lang[chat_id] = "ru"
+        lang = _user_lang[chat_id]
+        bot.send_message(chat_id, "🌐 Язык сменен на Русский.", reply_markup=main_keyboard(lang))
         return
     elif m.text == ("ℹ️ О боте" if lang=="ru" else "ℹ️ About"):
         about_ru = ("🤖 Бот для генерации изображений через Fusion Brain (Kandinsky).\n"

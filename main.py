@@ -9,9 +9,9 @@ import telebot
 from telebot import types
 
 # ---------- CONFIG ----------
-TELEGRAM_TOKEN = "7430907431:AAHOBgCCkC3RE9QgViiVonKJrUzEsWQAf1g"
-FUSION_API_KEY = "3C5A842238E0DF51E943497B54C565D3"
-FUSION_SECRET = "89CF6D0D3C413D2CC4A3EF37A91ED3B6"
+TELEGRAM_TOKEN = "ВАШ_TELEGRAM_TOKEN"
+FUSION_API_KEY = "ВАШ_FUSION_API_KEY"
+FUSION_SECRET = "ВАШ_FUSION_SECRET"
 FUSION_BASE_URL = "https://api-key.fusionbrain.ai"
 DEFAULT_MODEL_NAME = "Kandinsky"
 # ----------------------------
@@ -127,6 +127,15 @@ def cmd_help(m):
                "Send text — get image.")
     bot.send_message(chat_id, help_ru if lang=="ru" else help_en, reply_markup=main_keyboard(lang))
 
+@bot.message_handler(commands=["lang"])
+def cmd_lang(m):
+    chat_id = m.chat.id
+    current_lang = _user_lang.get(chat_id, "ru")
+    new_lang = "en" if current_lang == "ru" else "ru"
+    _user_lang[chat_id] = new_lang
+    msg = "🌐 Язык сменен на Русский." if new_lang == "ru" else "🌐 Language changed to English."
+    bot.send_message(chat_id, msg, reply_markup=main_keyboard(new_lang))
+
 @bot.message_handler(func=lambda m: m.text and m.text.startswith("/"))
 def unknown_command(m):
     chat_id = m.chat.id
@@ -140,6 +149,40 @@ def handle_prompt(m):
     chat_id = m.chat.id
     lang = _user_lang.get(chat_id, "ru")
     prompt = str(m.text).strip()
+    if m.text == ("🖼️ Сгенерировать" if lang=="ru" else "🖼️ Generate"):
+        bot.send_message(chat_id, "⚠️ Пожалуйста, отправьте текстовый промпт для генерации." if lang=="ru"
+                         else "⚠️ Please send a text prompt to generate.", reply_markup=main_keyboard(lang))
+        return
+    elif m.text == ("🔧 Помощь" if lang=="ru" else "🔧 Help"):
+        cmd_help(m)
+        return
+    elif m.text == ("🌐 Язык" if lang=="ru" else "🌐 Lang"):
+        cmd_lang(m)
+        return
+    elif m.text == ("📊 Статус" if lang=="ru" else "📊 Status"):
+        bot.send_message(chat_id, "⏳ Проверка статуса модели..." if lang=="ru" else "⏳ Checking model status...")
+        try:
+            pipeline_id = get_pipeline_id()
+            bot.send_message(chat_id, (f"✅ Модель '{DEFAULT_MODEL_NAME}' доступна. Pipeline ID: {pipeline_id}"
+                                       if lang=="ru" else
+                                       f"✅ Model '{DEFAULT_MODEL_NAME}' is available. Pipeline ID: {pipeline_id}"),
+                             reply_markup=main_keyboard(lang))
+        except Exception as e:
+            logger.exception("Error checking model status")
+            bot.send_message(chat_id, ("❌ Ошибка при проверке модели: " + str(e))
+                             if lang=="ru" else
+                             ("❌ Error checking model: " + str(e)),
+                             reply_markup=main_keyboard(lang))
+        return
+    elif m.text == ("ℹ️ О боте" if lang=="ru" else "ℹ️ About"):
+        about_ru = ("🤖 Бот для генерации изображений через Fusion Brain (Kandinsky).\n"
+                    "🛠️ Разработан с использованием Python и библиотеки pyTelegramBotAPI.\n"
+                    "📚 Исходный код доступен на GitHub.")
+        about_en = ("🤖 Bot for image generation via Fusion Brain (Kandinsky).\n"
+                    "🛠️ Developed using Python and pyTelegramBotAPI library.\n"
+                    "📚 Source code available on GitHub.")
+        bot.send_message(chat_id, about_ru if lang=="ru" else about_en, reply_markup=main_keyboard(lang))
+        return
     if not prompt:
         bot.send_message(chat_id, "⚠️ Пустой промпт." if lang=="ru" else "⚠️ Empty prompt.", reply_markup=main_keyboard(lang))
         return
